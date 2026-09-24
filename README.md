@@ -153,16 +153,210 @@ npm run dev              # http://localhost:3000 shows backend health status
 
 ## Run with Docker
 
+The Docker Compose setup provides a reproducible containerized deployment for development and demo purposes. It starts PostgreSQL, runs Alembic migrations automatically, starts the FastAPI backend, and serves the React frontend.
+
+### Quick Start (Development/Demo)
+
 ```powershell
-copy .env.example .env              # optional; defaults work out of the box
+# 1. Create environment file with secrets
+copy .env.example .env
+# Edit .env: set JWT_SECRET_KEY (generate with: python -c "import secrets; print(secrets.token_urlsafe(48))")
+# Optionally adjust POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+
+# 2. Build and start all services
 docker compose up --build
-# frontend: http://localhost:3000
-# backend:  http://localhost:8000/health + /api/v1/health + /docs
-docker compose down                 # stop; add -v to drop the pgdata volume
+
+# 3. Access the application
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:8000
+# API Docs (Swagger): http://localhost:8000/docs
+# Health check: http://localhost:8000/health
 ```
 
-The backend Dockerfile runs `uvicorn app.main:app --host 0.0.0.0 --port 8000`;
-the frontend image builds with Vite and serves via `vite preview` on port 3000.
+The stack starts in this order:
+1. **PostgreSQL** starts and becomes healthy (`pg_isready`)
+2. **Backend** starts, runs `alembic upgrade head`, then FastAPI on `:8000`
+3. **Frontend** builds with `VITE_API_URL=http://localhost:8000`, serves on `:3000`
+
+### Common Commands
+
+```powershell
+# Start in background
+docker compose up --build -d
+
+# View logs
+docker compose logs -f backend
+docker compose logs -f frontend
+docker compose logs -f postgres
+
+# Stop (preserves database volume)
+docker compose down
+
+# Stop and REMOVE database volume (destructive — deletes all data)
+docker compose down -v
+
+# Restart after code changes
+docker compose up --build --force-recreate
+```
+
+### Environment Variables
+
+Create `.env` from `.env.example` at the project root:
+
+| Variable | Description | Default (dev only) |
+|----------|-------------|-------------------|
+| `POSTGRES_USER` | PostgreSQL username | `postgres` |
+| `POSTGRES_PASSWORD` | PostgreSQL password | `password` |
+| `POSTGRES_DB` | PostgreSQL database name | `timetable` |
+| `JWT_SECRET_KEY` | **Required** — signing key for JWT tokens (generate 48+ chars) | — |
+
+> **Warning:** The defaults are for local development only. Never use them in production. Always provide a strong `JWT_SECRET_KEY` and database password.
+
+### Optional: Development Seed Data
+
+The Docker stack does **not** run the development seed automatically. To add demo data (admin, faculty, students, etc.) after the stack is running:
+
+```powershell
+docker compose exec backend python -m app.seed
+```
+
+This creates the demo users documented in [Development/Demo Login](#developmentdemo-login).
+
+### Create Admin User (First Run)
+
+No admin user is created automatically. After the stack is healthy, create a `SUPER_ADMIN`:
+
+```powershell
+docker compose exec backend python -c "
+from app.core.security import get_password_hash
+from app.models.user import User, UserRole
+from app.core.db import AsyncSessionLocal
+import asyncio
+
+async def create_admin():
+    async with AsyncSessionLocal() as db:
+        admin = User(
+            email='admin@yourdomain.com',
+            password_hash=get_password_hash('StrongPass123!'),
+            full_name='System Admin',
+            role=UserRole.SUPER_ADMIN,
+            is_active=True
+        )
+        db.add(admin)
+        await db.commit()
+        print('Created SUPER_ADMIN:', admin.email)
+
+asyncio.run(create_admin())
+"
+```
+
+## Production Deployment
+
+### Database Setup (Production)
+
+Create a **clean database** with no seeded data:
+
+```powershell
+# 1. Create production database (no seed data)
+#    In PostgreSQL: CREATE DATABASE timetable_prod;
+
+# 2. Backend - apply migrations only
+cd backend
+python -m venv .venv; .\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+copy .env.example .env   # set production DATABASE_URL, JWT_SECRET_KEY, etc.
+alembic upgrade head     # apply schema — NO seed command
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+### Admin User Creation (Production)
+
+**No automatic admin creation exists.** Create the first `SUPER_ADMIN` manually:
+
+```powershell
+# Option A: Direct database insert (run once)
+cd backend
+.venv\Scripts\Activate.ps1
+python -c "
+from app.core.security import get_password_hash
+from app.models.user import User, UserRole
+from app.core.db import AsyncSessionLocal
+import asyncio
+
+async def create_admin():
+    async with AsyncSessionLocal() as db:
+        admin = User(
+            email='admin@yourdomain.com',
+            password_hash=get_password_hash('your-strong-password'),
+            full_name='System Admin',
+            role=UserRole.SUPER_ADMIN,
+            is_active=True
+        )
+        db.add(admin)
+        await db.commit()
+        print('Created SUPER_ADMIN:', admin.email)
+
+asyncio.run(create_admin())
+```
+
+### Frontend Production Build
+
+```powershell
+cd frontend
+npm install
+copy .env.example .env   # set VITE_API_URL=https://your-api.domain.com
+npm run build            # outputs to dist/
+# Serve dist/ with nginx, Apache, or any static file server
+```
+
+### Docker for Production-like Demos
+
+The Docker Compose stack can be used for production-like demos with these adjustments:
+
+```powershell
+# 1. Create production .env with real secrets
+copy .env.example .env
+# Edit .env: POSTGRES_DB=timetable_prod, JWT_SECRET_KEY=..., POSTGRES_PASSWORD=..., etc.
+
+# 2. Build and run (no seed data, migrations run automatically)
+docker compose up --build -d
+
+# 3. Create admin user in running container
+docker compose exec backend python -c "
+from app.core.security import get_password_hash
+from app.models.user import User, UserRole
+from app.core.db import AsyncSessionLocal
+import asyncio
+async def create_admin():
+    async with AsyncSessionLocal() as db:
+        admin = User(email='admin@yourdomain.com', password_hash=get_password_hash('StrongPass123!'), full_name='System Admin', role=UserRole.SUPER_ADMIN, is_active=True)
+        db.add(admin); await db.commit(); print('Created:', admin.email)
+asyncio.run(create_admin())
+"
+```
+
+> **Note:** This Docker setup is a reproducible containerized deployment suitable for development, demos, and staging. For production, consider: managed PostgreSQL, reverse proxy (nginx + TLS), secrets management, and horizontal scaling.
+
+### Key Differences: Development vs Production
+
+| Aspect | Development | Production |
+|--------|-------------|------------|
+| Database | Seeded with demo data | Clean — migrations only |
+| Seed command | `python -m app.seed` | **Never run** |
+| Admin user | Pre-seeded (`admin@college.edu`) | **Create manually** |
+| Passwords | Default `college123` | **Strong, unique passwords** |
+| CORS | `http://localhost:3000` | Your actual domain |
+| JWT_SECRET_KEY | Placeholder | **Strong 48+ char secret** |
+
+### Security Checklist (Pre-Production)
+
+- [ ] Generate new `JWT_SECRET_KEY`: `python -c "import secrets; print(secrets.token_urlsafe(48))"`
+- [ ] Set strong database password
+- [ ] Configure `BACKEND_CORS_ORIGINS` to your frontend domain only
+- [ ] Create `SUPER_ADMIN` with strong password
+- [ ] Remove/disable any seeded dev users if database was seeded
+- [ ] Use HTTPS (reverse proxy: nginx + certbot)
+- [ ] Set `ACCESS_TOKEN_EXPIRE_MINUTES` appropriately (default 60)
 
 ## API documentation (Phases 1–6)
 
@@ -287,6 +481,19 @@ Seed data is for local development/demo purposes only.
 
 > The seed login (`admin@college.edu` / `college123`) is a
 > development-only credential. Never use in production.
+
+## Development/Demo Login
+
+The following credentials are seeded by `python -m app.seed` for local development and demo purposes only:
+
+| Role | Email | Password |
+|------|-------|----------|
+| SUPER_ADMIN | `admin@college.edu` | `college123` |
+| ADMIN | `alice@college.edu` | `college123` |
+| FACULTY | `bob@college.edu` | `college123` |
+| STUDENT | `student@college.edu` | `college123` |
+
+> **Warning:** These are development-only credentials with a weak default password. Never use in production. Always change passwords and remove seed users before deploying to production.
 
 ## Frontend (Phase 7)
 
