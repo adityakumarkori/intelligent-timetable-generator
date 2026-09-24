@@ -288,6 +288,19 @@ Seed data is for local development/demo purposes only.
 > The seed login (`admin@college.edu` / `college123`) is a
 > development-only credential. Never use in production.
 
+## Development/Demo Login
+
+The following credentials are seeded by `python -m app.seed` for local development and demo purposes only:
+
+| Role | Email | Password |
+|------|-------|----------|
+| SUPER_ADMIN | `admin@college.edu` | `college123` |
+| ADMIN | `alice@college.edu` | `college123` |
+| FACULTY | `bob@college.edu` | `college123` |
+| STUDENT | `student@college.edu` | `college123` |
+
+> **Warning:** These are development-only credentials with a weak default password. Never use in production. Always change passwords and remove seed users before deploying to production.
+
 ## Frontend (Phase 7)
 
 Role-based single-page app (React 19 + TypeScript strict + Tailwind + Radix

@@ -94,7 +94,7 @@ export default function LoginPage() {
               {isSubmitting ? 'Signing in…' : 'Sign in'}
             </Button>
             <p className="text-center text-xs text-slate-500">
-              Seeded admin login: <code>admin@college.edu</code> · password <code>college123</code>
+              Demo credentials are available in the README.
             </p>
             <p className="text-center text-xs">
               <Link to="/health" className="text-slate-500 underline">
