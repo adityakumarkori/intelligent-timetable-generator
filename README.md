@@ -34,8 +34,11 @@ explaining impossible schedules.
 * Published-timetable history with lightweight audit (`created_by`,
   `published_by`)
 
-The included React frontend is a minimal backend health-check page only;
-all product workflows above are exposed through the REST API and Swagger UI.
+The React frontend covers the complete product workflow: role-based login,
+dashboards, all master-data screens, availability/assignment/requirement
+management, CP-SAT generation with conflict explanations, the weekly grid,
+manual entry editing with validation, versioning, publishing, and
+faculty/student timetable views.
 
 ## Technology stack
 
@@ -83,7 +86,8 @@ See `docs/architecture.md`, `docs/approach.md`, and `docs/edge-cases.md`.
 
 ```text
 ./
-├── frontend/          # Vite React app: health-check page (port 3000)
+├── frontend/          # Vite React app (port 3000): auth, dashboards, CRUD,
+│                      # generation + conflict UX, timetable grid/editor, role views
 ├── backend/
 │   ├── app/
 │   │   ├── core/              # config, async DB, security (JWT/Argon2id), RBAC deps
@@ -284,6 +288,43 @@ Seed data is for local development/demo purposes only.
 > The seed login (`admin@college.edu` / `college123`) is a
 > development-only credential. Never use in production.
 
+## Frontend (Phase 7)
+
+Role-based single-page app (React 19 + TypeScript strict + Tailwind + Radix
+primitives + React Hook Form/Zod + TanStack Query + Axios + Sonner toasts):
+
+- **Login** (`/login`): validation, credential errors, JWT in localStorage
+  (never displayed), role-based redirect, 401 interceptor → logout.
+- **Admin** (`/admin/...`): dashboard with live counts + recent timetables;
+  CRUD for sessions, departments, divisions, subjects, faculty, rooms,
+  periods (search, filters, pagination, dialogs, delete confirms);
+  availability matrix (missing = available); assignments with duplicate
+  guard; weekly requirements with a generation explainer.
+- **Timetables**: filterable list incl. version history; **Generate** screen
+  (session + division + solver options) showing solver status, quality
+  score, and a structured conflict panel with suggestions on failure;
+  weekly grid built dynamically from periods; detail page with grid,
+  validation tab (violations + quality warnings + score), and versions tab.
+- **Editor** (admin, editable statuses only): add/edit/delete entries with
+  backend-compatible selects; whole-timetable revalidation; 409 conflict
+  and `STALE_TIMETABLE` handling with refresh; `If-Unmodified-Since` sent
+  automatically; validate → publish (with confirmation + replacement info)
+  → archive → clone-to-draft.
+- **Faculty** (`/faculty/...`): dashboard, personal timetable (auto-resolved
+  faculty profile), published browser. **Student** (`/student/...`):
+  dashboard, division-published schedule. Students/faculty see no admin
+  actions; routes enforce roles beyond sidebar hiding, and every screen
+  handles loading/empty/error states.
+
+```powershell
+cd frontend
+npm install
+copy .env.example .env   # VITE_API_URL=http://localhost:8000
+npm run dev              # http://localhost:3000
+npm test                 # vitest suite (23 tests)
+npm run build            # strict tsc + production bundle
+```
+
 ## Testing
 
 ```powershell
@@ -305,6 +346,10 @@ CRUD, safe-delete, session activation, read matrix), `test_api_scheduling`
 end-to-end, versioning, infeasible path), `test_api_lifecycle` (edit/validate/
 publish/archive/clone, RBAC, concurrency), `test_engine_*` (sessions, candidates,
 solver invariants, validator violations, conflicts, loader, quality scoring).
+
+Frontend: `npm test` from `frontend/` (verified: **23 tests passing** —
+login flow, route guards, role navigation, grid rendering, conflict display,
+validation panel, generation success/failure UX, API error mapping).
 
 ## Known limitations
 

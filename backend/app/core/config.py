@@ -16,7 +16,13 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/timetable"
     TEST_DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/timetable_test"
-    BACKEND_CORS_ORIGINS: str = "http://localhost:3000"
+    # BACKEND_CORS_ORIGINS: str = "http://localhost:3000"
+    BACKEND_CORS_ORIGINS: str = (
+        "http://localhost:3000,"
+        "http://127.0.0.1:3000,"
+        "http://localhost:8000,"
+        "http://127.0.0.1:8000"
+    )
 
     # Auth — no defaults for the secret: it must come from the environment.
     JWT_SECRET_KEY: str = ""
