@@ -300,7 +300,7 @@ export default function TimetableDetailPage({
     : null;
 
   return (
-    <div className="grid gap-4">
+    <div className="grid min-w-0 gap-4 [&>*]:min-w-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="flex flex-wrap items-center gap-2 text-xl font-semibold text-slate-900">

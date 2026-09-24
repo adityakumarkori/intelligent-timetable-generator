@@ -176,7 +176,7 @@ export function AppShell() {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
           <div className="flex items-center gap-2 px-4 py-2.5">
             <Button

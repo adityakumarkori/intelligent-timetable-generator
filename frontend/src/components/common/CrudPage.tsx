@@ -246,7 +246,7 @@ export function CrudPage<T extends { id: string }>({
   const rows = query.data?.items ?? [];
 
   return (
-    <div className="grid gap-4">
+    <div className="grid min-w-0 gap-4 [&>*]:min-w-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-semibold text-slate-900">{title}</h1>

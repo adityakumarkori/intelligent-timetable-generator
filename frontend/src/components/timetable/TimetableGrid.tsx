@@ -55,7 +55,7 @@ export function TimetableGrid({
       <table className="w-full min-w-[720px] border-collapse text-sm">
         <thead>
           <tr className="bg-slate-50">
-            <th className="w-32 border-b border-r border-slate-200 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="sticky left-0 z-10 w-32 border-b border-r border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Time
             </th>
             {days.map((d) => (
@@ -71,7 +71,7 @@ export function TimetableGrid({
         <tbody>
           {orderedSlots.map((slot) => (
             <tr key={slot.key} className="border-b border-slate-100 last:border-0">
-              <td className="border-r border-slate-200 bg-slate-50 px-3 py-2 align-top text-xs font-medium tabular-nums text-slate-600">
+              <td className="sticky left-0 z-10 border-r border-slate-200 bg-slate-50 px-3 py-2 align-top text-xs font-medium tabular-nums text-slate-600">
                 {slot.label}
               </td>
               {days.map((day) => {
