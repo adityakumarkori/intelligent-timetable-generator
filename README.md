@@ -164,6 +164,116 @@ docker compose down                 # stop; add -v to drop the pgdata volume
 The backend Dockerfile runs `uvicorn app.main:app --host 0.0.0.0 --port 8000`;
 the frontend image builds with Vite and serves via `vite preview` on port 3000.
 
+## Production Deployment
+
+### Database Setup (Production)
+
+Create a **clean database** with no seeded data:
+
+```powershell
+# 1. Create production database (no seed data)
+#    In PostgreSQL: CREATE DATABASE timetable_prod;
+
+# 2. Backend - apply migrations only
+cd backend
+python -m venv .venv; .\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+copy .env.example .env   # set production DATABASE_URL, JWT_SECRET_KEY, etc.
+alembic upgrade head     # apply schema — NO seed command
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+### Admin User Creation (Production)
+
+**No automatic admin creation exists.** Create the first `SUPER_ADMIN` manually:
+
+```powershell
+# Option A: Direct database insert (run once)
+cd backend
+.venv\Scripts\Activate.ps1
+python -c "
+from app.core.security import get_password_hash
+from app.models.user import User, UserRole
+from app.core.db import AsyncSessionLocal
+import asyncio
+
+async def create_admin():
+    async with AsyncSessionLocal() as db:
+        admin = User(
+            email='admin@yourdomain.com',
+            password_hash=get_password_hash('your-strong-password'),
+            full_name='System Admin',
+            role=UserRole.SUPER_ADMIN,
+            is_active=True
+        )
+        db.add(admin)
+        await db.commit()
+        print('Created SUPER_ADMIN:', admin.email)
+
+asyncio.run(create_admin())
+"
+
+# Option B: Use API after starting server
+# 1. Start backend: uvicorn app.main:app --port 8000
+# 2. Use /api/v1/auth/login with existing credentials (if any)
+# 3. POST /api/v1/faculty to create admin user with SUPER_ADMIN role
+```
+
+### Frontend Production Build
+
+```powershell
+cd frontend
+npm install
+copy .env.example .env   # set VITE_API_URL=https://your-api.domain.com
+npm run build            # outputs to dist/
+# Serve dist/ with nginx, Apache, or any static file server
+```
+
+### Docker Production (Recommended)
+
+```powershell
+# 1. Create production .env with real secrets
+copy .env.example .env
+# Edit .env: POSTGRES_DB=timetable_prod, JWT_SECRET_KEY=..., etc.
+
+# 2. Build and run (no seed data)
+docker compose up --build -d
+
+# 3. Create admin user in running container
+docker compose exec backend python -c "
+from app.core.security import get_password_hash
+from app.models.user import User, UserRole
+from app.core.db import AsyncSessionLocal
+import asyncio
+async def create_admin():
+    async with AsyncSessionLocal() as db:
+        admin = User(email='admin@yourdomain.com', password_hash=get_password_hash('your-strong-password'), full_name='System Admin', role=UserRole.SUPER_ADMIN, is_active=True)
+        db.add(admin); await db.commit(); print('Created:', admin.email)
+asyncio.run(create_admin())
+"
+```
+
+### Key Differences: Development vs Production
+
+| Aspect | Development | Production |
+|--------|-------------|------------|
+| Database | Seeded with demo data | Clean — migrations only |
+| Seed command | `python -m app.seed` | **Never run** |
+| Admin user | Pre-seeded (`admin@college.edu`) | **Create manually** |
+| Passwords | Default `college123` | **Strong, unique passwords** |
+| CORS | `http://localhost:3000` | Your actual domain |
+| JWT_SECRET_KEY | Placeholder | **Strong 48+ char secret** |
+
+### Security Checklist (Pre-Production)
+
+- [ ] Generate new `JWT_SECRET_KEY`: `python -c "import secrets; print(secrets.token_urlsafe(48))"`
+- [ ] Set strong database password
+- [ ] Configure `BACKEND_CORS_ORIGINS` to your frontend domain only
+- [ ] Create `SUPER_ADMIN` with strong password
+- [ ] Remove/disable any seeded dev users if database was seeded
+- [ ] Use HTTPS (reverse proxy: nginx + certbot)
+- [ ] Set `ACCESS_TOKEN_EXPIRE_MINUTES` appropriately (default 60)
+
 ## API documentation (Phases 1–6)
 
 | Method | Path                     | Purpose                        | Auth              |
