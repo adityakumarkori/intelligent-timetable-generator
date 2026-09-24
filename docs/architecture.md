@@ -106,6 +106,20 @@ are immutable (clone to edit). Optimistic concurrency via optional
 `If-Unmodified-Since` against `updated_at` (stale → 409). Lightweight audit:
 nullable `created_by`/`published_by` FKs (migration 0002).
 
+## Frontend (Phase 7)
+
+Role-based SPA (`frontend/src`): `routes/` guards every path by role (sidebar
+hiding is cosmetic only); `auth/` holds the JWT session (localStorage token,
+never displayed; 401 interceptor forces logout); `services/` maps 1:1 to API
+resources over a single Axios instance; `types/api.ts` mirrors backend
+schemas as strict TypeScript (no `any`, no enums). Server state lives in
+TanStack Query with invalidation after every mutation; forms use React Hook
+Form + Zod for UX validation while the backend stays authoritative. The
+timetable grid is built dynamically from periods; entry mutations send
+`If-Unmodified-Since` and surface 409 conflicts/suggestions and `STALE_`
+states without losing user input. Faculty/student views consume only the
+endpoints their roles permit (own-profile resolution, published-only reads).
+
 ## Known limitations
 
 - Generation scope is one division per request (model already multi-division

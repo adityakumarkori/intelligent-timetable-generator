@@ -14,7 +14,7 @@ async function fetchHealth(): Promise<HealthResponse> {
   return data;
 }
 
-export default function App() {
+export default function HealthPage() {
   const { data, isPending, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['backend-health'],
     queryFn: fetchHealth,
@@ -24,13 +24,13 @@ export default function App() {
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-6 p-8">
       <div>
-        <h1 className="text-3xl font-semibold">Intelligent Timetable Generator</h1>
+        <h1 className="text-3xl font-semibold">Backend status</h1>
         <p className="mt-2 text-sm text-gray-600">
-          Phase 1 foundation — React + FastAPI wiring check.
+          Live connectivity check against the FastAPI service.
         </p>
       </div>
 
-      <section className="rounded-lg border p-4">
+      <section className="rounded-lg border border-slate-200 bg-white p-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-medium">Backend health</h2>
           <span
@@ -64,15 +64,15 @@ export default function App() {
           type="button"
           onClick={() => refetch()}
           disabled={isFetching}
-          className="mt-4 rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50"
+          className="mt-4 rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50"
         >
           {isFetching ? 'Rechecking…' : 'Recheck'}
         </button>
       </section>
 
       <nav className="text-sm text-gray-600">
-        <Link to="/dashboard" className="underline">
-          Go to dashboard placeholder
+        <Link to="/login" className="underline">
+          Back to login
         </Link>
       </nav>
     </main>
