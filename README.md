@@ -153,16 +153,102 @@ npm run dev              # http://localhost:3000 shows backend health status
 
 ## Run with Docker
 
+The Docker Compose setup provides a reproducible containerized deployment for development and demo purposes. It starts PostgreSQL, runs Alembic migrations automatically, starts the FastAPI backend, and serves the React frontend.
+
+### Quick Start (Development/Demo)
+
 ```powershell
-copy .env.example .env              # optional; defaults work out of the box
+# 1. Create environment file with secrets
+copy .env.example .env
+# Edit .env: set JWT_SECRET_KEY (generate with: python -c "import secrets; print(secrets.token_urlsafe(48))")
+# Optionally adjust POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+
+# 2. Build and start all services
 docker compose up --build
-# frontend: http://localhost:3000
-# backend:  http://localhost:8000/health + /api/v1/health + /docs
-docker compose down                 # stop; add -v to drop the pgdata volume
+
+# 3. Access the application
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:8000
+# API Docs (Swagger): http://localhost:8000/docs
+# Health check: http://localhost:8000/health
 ```
 
-The backend Dockerfile runs `uvicorn app.main:app --host 0.0.0.0 --port 8000`;
-the frontend image builds with Vite and serves via `vite preview` on port 3000.
+The stack starts in this order:
+1. **PostgreSQL** starts and becomes healthy (`pg_isready`)
+2. **Backend** starts, runs `alembic upgrade head`, then FastAPI on `:8000`
+3. **Frontend** builds with `VITE_API_URL=http://localhost:8000`, serves on `:3000`
+
+### Common Commands
+
+```powershell
+# Start in background
+docker compose up --build -d
+
+# View logs
+docker compose logs -f backend
+docker compose logs -f frontend
+docker compose logs -f postgres
+
+# Stop (preserves database volume)
+docker compose down
+
+# Stop and REMOVE database volume (destructive — deletes all data)
+docker compose down -v
+
+# Restart after code changes
+docker compose up --build --force-recreate
+```
+
+### Environment Variables
+
+Create `.env` from `.env.example` at the project root:
+
+| Variable | Description | Default (dev only) |
+|----------|-------------|-------------------|
+| `POSTGRES_USER` | PostgreSQL username | `postgres` |
+| `POSTGRES_PASSWORD` | PostgreSQL password | `password` |
+| `POSTGRES_DB` | PostgreSQL database name | `timetable` |
+| `JWT_SECRET_KEY` | **Required** — signing key for JWT tokens (generate 48+ chars) | — |
+
+> **Warning:** The defaults are for local development only. Never use them in production. Always provide a strong `JWT_SECRET_KEY` and database password.
+
+### Optional: Development Seed Data
+
+The Docker stack does **not** run the development seed automatically. To add demo data (admin, faculty, students, etc.) after the stack is running:
+
+```powershell
+docker compose exec backend python -m app.seed
+```
+
+This creates the demo users documented in [Development/Demo Login](#developmentdemo-login).
+
+### Create Admin User (First Run)
+
+No admin user is created automatically. After the stack is healthy, create a `SUPER_ADMIN`:
+
+```powershell
+docker compose exec backend python -c "
+from app.core.security import get_password_hash
+from app.models.user import User, UserRole
+from app.core.db import AsyncSessionLocal
+import asyncio
+
+async def create_admin():
+    async with AsyncSessionLocal() as db:
+        admin = User(
+            email='admin@yourdomain.com',
+            password_hash=get_password_hash('StrongPass123!'),
+            full_name='System Admin',
+            role=UserRole.SUPER_ADMIN,
+            is_active=True
+        )
+        db.add(admin)
+        await db.commit()
+        print('Created SUPER_ADMIN:', admin.email)
+
+asyncio.run(create_admin())
+"
+```
 
 ## Production Deployment
 
@@ -211,12 +297,6 @@ async def create_admin():
         print('Created SUPER_ADMIN:', admin.email)
 
 asyncio.run(create_admin())
-"
-
-# Option B: Use API after starting server
-# 1. Start backend: uvicorn app.main:app --port 8000
-# 2. Use /api/v1/auth/login with existing credentials (if any)
-# 3. POST /api/v1/faculty to create admin user with SUPER_ADMIN role
 ```
 
 ### Frontend Production Build
@@ -229,14 +309,16 @@ npm run build            # outputs to dist/
 # Serve dist/ with nginx, Apache, or any static file server
 ```
 
-### Docker Production (Recommended)
+### Docker for Production-like Demos
+
+The Docker Compose stack can be used for production-like demos with these adjustments:
 
 ```powershell
 # 1. Create production .env with real secrets
 copy .env.example .env
-# Edit .env: POSTGRES_DB=timetable_prod, JWT_SECRET_KEY=..., etc.
+# Edit .env: POSTGRES_DB=timetable_prod, JWT_SECRET_KEY=..., POSTGRES_PASSWORD=..., etc.
 
-# 2. Build and run (no seed data)
+# 2. Build and run (no seed data, migrations run automatically)
 docker compose up --build -d
 
 # 3. Create admin user in running container
@@ -247,11 +329,13 @@ from app.core.db import AsyncSessionLocal
 import asyncio
 async def create_admin():
     async with AsyncSessionLocal() as db:
-        admin = User(email='admin@yourdomain.com', password_hash=get_password_hash('your-strong-password'), full_name='System Admin', role=UserRole.SUPER_ADMIN, is_active=True)
+        admin = User(email='admin@yourdomain.com', password_hash=get_password_hash('StrongPass123!'), full_name='System Admin', role=UserRole.SUPER_ADMIN, is_active=True)
         db.add(admin); await db.commit(); print('Created:', admin.email)
 asyncio.run(create_admin())
 "
 ```
+
+> **Note:** This Docker setup is a reproducible containerized deployment suitable for development, demos, and staging. For production, consider: managed PostgreSQL, reverse proxy (nginx + TLS), secrets management, and horizontal scaling.
 
 ### Key Differences: Development vs Production
 
