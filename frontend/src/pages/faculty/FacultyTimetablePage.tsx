@@ -11,12 +11,12 @@ export default function FacultyTimetablePage() {
   const entries = useQuery({
     queryKey: ['faculty-timetable', profile.data?.id],
     queryFn: () =>
-      timetableApi.facultyTimetable(profile.data!.id, { page: 1, page_size: 200 }),
+      timetableApi.facultyTimetable(profile.data!.id, { page: 1, page_size: 100 }),
     enabled: Boolean(profile.data?.id),
   });
   const periods = useQuery({
     queryKey: ['periods', 'grid'],
-    queryFn: () => periodApi.list({ page: 1, page_size: 500 }),
+    queryFn: () => periodApi.list({ page: 1, page_size: 100 }),
   });
 
   if (profile.isPending) return <LoadingState label="Resolving faculty profile" />;

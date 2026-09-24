@@ -23,12 +23,12 @@ export default function AvailabilityPage() {
 
   const facultyList = useQuery({
     queryKey: ['faculty', 'options-full'],
-    queryFn: () => facultyApi.list({ page: 1, page_size: 200 }),
+    queryFn: () => facultyApi.list({ page: 1, page_size: 100 }),
   });
 
   const periods = useQuery({
     queryKey: ['periods', 'all'],
-    queryFn: () => periodApi.list({ page: 1, page_size: 500 }),
+    queryFn: () => periodApi.list({ page: 1, page_size: 100 }),
   });
 
   const availability = useQuery({

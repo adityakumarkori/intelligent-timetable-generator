@@ -6,7 +6,7 @@ import type { ListParams } from '@/services/crud';
 import { DepartmentFilter } from '@/pages/admin/DivisionsPage';
 
 async function departmentOptions() {
-  const page = await departmentApi.list({ page: 1, page_size: 200 });
+  const page = await departmentApi.list({ page: 1, page_size: 100 });
   return page.items.map((d) => ({ value: d.id, label: `${d.code} — ${d.name}` }));
 }
 

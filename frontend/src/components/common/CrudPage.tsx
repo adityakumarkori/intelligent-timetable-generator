@@ -173,7 +173,15 @@ export function CrudPage<T extends { id: string }>({
     const values: FormValues = {};
     for (const f of fields) {
       const v = (row as unknown as Record<string, unknown>)[f.name];
-      values[f.name] = v ?? (f.type === 'checkbox' ? false : '');
+      if (v === undefined || v === null) {
+        values[f.name] = f.type === 'checkbox' ? false : '';
+      } else if (typeof v === 'number') {
+        // Numeric form fields are strings in the form state (converted back
+        // to numbers on submit); stringify row values so edits validate.
+        values[f.name] = String(v);
+      } else {
+        values[f.name] = v;
+      }
     }
     reset(values as Values);
     setEditing(row);

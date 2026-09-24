@@ -13,7 +13,7 @@ export function DropdownMenuContent({
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
         className={cn(
-          'z-50 min-w-[10rem] overflow-hidden rounded-md border border-slate-200 bg-white p-1 shadow-md',
+          'pointer-events-auto z-50 min-w-[10rem] overflow-hidden rounded-md border border-slate-200 bg-white p-1 shadow-md',
           className,
         )}
         {...props}

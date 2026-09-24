@@ -18,7 +18,7 @@ export default function StudentTimetablePage() {
   });
   const periods = useQuery({
     queryKey: ['periods', 'grid'],
-    queryFn: () => periodApi.list({ page: 1, page_size: 500 }),
+    queryFn: () => periodApi.list({ page: 1, page_size: 100 }),
   });
 
   return (
