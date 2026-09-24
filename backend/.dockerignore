@@ -1,9 +1,11 @@
-# Python
+# Python cache
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+
+# Python build/package artifacts
 build/
 develop-eggs/
 dist/
@@ -32,12 +34,12 @@ ENV/
 *.swp
 *.swo
 
-# Environment files
+# Environment/secrets
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
-# Database
+# Local databases
 *.db
 *.sqlite3
 
@@ -45,20 +47,21 @@ ENV/
 *.log
 logs/
 
-# Testing
+# Testing/cache
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
-
-# Docker
-.dockerignore
-Dockerfile
-docker-compose.yml
+.mypy_cache/
+.ruff_cache/
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Migrations (keep alembic directory but not generated cache)
+# Git
+.git/
+.gitignore
+
+# Python cache inside migrations
 alembic/versions/__pycache__/
