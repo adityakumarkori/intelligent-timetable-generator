@@ -121,6 +121,7 @@ export default function RequirementsPage() {
       division_id: row.division_id,
       subject_id: row.subject_id,
       academic_session_id: row.academic_session_id,
+      // Form state keeps numbers as strings (converted on submit).
       required_periods_per_week: String(row.required_periods_per_week),
       preferred_room_type: row.preferred_room_type ?? '',
       requires_lab: row.requires_lab,

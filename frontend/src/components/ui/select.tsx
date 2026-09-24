@@ -36,8 +36,10 @@ export function SelectContent({
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
         position={position}
+        // Modal dialogs lock body pointer-events; the dropdown portals to
+        // <body>, so re-enable hit-testing here or items are unclickable.
         className={cn(
-          'z-50 max-h-72 min-w-[8rem] overflow-y-auto rounded-md border border-slate-200 bg-white p-1 shadow-md',
+          'pointer-events-auto z-50 max-h-72 min-w-[8rem] overflow-y-auto rounded-md border border-slate-200 bg-white p-1 shadow-md',
           position === 'popper' && 'w-[var(--radix-select-trigger-width)]',
           className,
         )}

@@ -13,7 +13,7 @@ import { departmentApi, divisionApi } from '@/services/masterApi';
 import type { ListParams } from '@/services/crud';
 
 async function departmentOptions() {
-  const page = await departmentApi.list({ page: 1, page_size: 200 });
+  const page = await departmentApi.list({ page: 1, page_size: 100 });
   return page.items.map((d) => ({ value: d.id, label: `${d.code} — ${d.name}` }));
 }
 

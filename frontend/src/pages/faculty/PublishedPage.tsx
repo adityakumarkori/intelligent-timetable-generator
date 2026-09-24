@@ -17,7 +17,7 @@ export default function PublishedPage() {
   });
   const periods = useQuery({
     queryKey: ['periods', 'grid'],
-    queryFn: () => periodApi.list({ page: 1, page_size: 500 }),
+    queryFn: () => periodApi.list({ page: 1, page_size: 100 }),
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const detail = useQuery({

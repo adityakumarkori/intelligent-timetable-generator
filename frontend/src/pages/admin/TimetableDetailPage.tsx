@@ -61,7 +61,7 @@ function RoomSelect({
 }) {
   const rooms = useQuery({
     queryKey: ['rooms', 'options'],
-    queryFn: () => roomApi.list({ page: 1, page_size: 200 }),
+    queryFn: () => roomApi.list({ page: 1, page_size: 100 }),
     staleTime: 60_000,
   });
   return (
@@ -91,7 +91,7 @@ function PeriodSelect({
 }) {
   const periods = useQuery({
     queryKey: ['periods', 'teaching-options'],
-    queryFn: () => periodApi.list({ page: 1, page_size: 500, is_break: false, is_active: true }),
+    queryFn: () => periodApi.list({ page: 1, page_size: 100, is_break: false, is_active: true }),
     staleTime: 60_000,
   });
   return (
@@ -137,7 +137,7 @@ export default function TimetableDetailPage({
   });
   const periods = useQuery({
     queryKey: ['periods', 'grid'],
-    queryFn: () => periodApi.list({ page: 1, page_size: 500 }),
+    queryFn: () => periodApi.list({ page: 1, page_size: 100 }),
   });
   const validation = useQuery({
     queryKey: ['timetable-validation', id],
@@ -300,7 +300,7 @@ export default function TimetableDetailPage({
     : null;
 
   return (
-    <div className="grid gap-4">
+    <div className="grid min-w-0 gap-4 [&>*]:min-w-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="flex flex-wrap items-center gap-2 text-xl font-semibold text-slate-900">

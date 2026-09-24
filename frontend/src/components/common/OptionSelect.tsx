@@ -17,19 +17,19 @@ export interface Option {
 async function fetchOptions(kind: string): Promise<Option[]> {
   switch (kind) {
     case 'departments': {
-      const p = await departmentApi.list({ page: 1, page_size: 200 });
+      const p = await departmentApi.list({ page: 1, page_size: 100 });
       return p.items.map((d) => ({ value: d.id, label: `${d.code} — ${d.name}` }));
     }
     case 'divisions': {
-      const p = await divisionApi.list({ page: 1, page_size: 200 });
+      const p = await divisionApi.list({ page: 1, page_size: 100 });
       return p.items.map((d) => ({ value: d.id, label: `${d.code} — ${d.name}` }));
     }
     case 'subjects': {
-      const p = await subjectApi.list({ page: 1, page_size: 200 });
+      const p = await subjectApi.list({ page: 1, page_size: 100 });
       return p.items.map((s) => ({ value: s.id, label: `${s.code} — ${s.name}` }));
     }
     case 'faculty': {
-      const p = await facultyApi.list({ page: 1, page_size: 200 });
+      const p = await facultyApi.list({ page: 1, page_size: 100 });
       return p.items.map((f) => ({ value: f.id, label: `${f.name} (${f.employee_code})` }));
     }
     case 'sessions': {

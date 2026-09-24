@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { Field } from '@/components/common/Field';
 import { Pagination } from '@/components/common/Pagination';
+import { TimeSelect } from '@/components/common/TimeSelect';
 import { EmptyState, ErrorState, LoadingState } from '@/components/common/States';
 import { Button } from '@/components/ui/button';
 import {
@@ -80,12 +81,21 @@ function buildSchema(fields: FieldConfig[]) {
         break;
       case 'select':
       case 'date':
-      case 'time':
       case 'text':
       default:
         field = z.string();
         if (f.required) field = (field as z.ZodString).min(1, `${f.label} is required`);
         break;
+      case 'time': {
+        // TimeSelect emits "HH:MM"; the API may return "HH:MM:SS".
+        const timeRe = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
+        field = f.required
+          ? z.string().regex(timeRe, `${f.label} must be a valid time`)
+          : z.string().refine((v) => v === '' || timeRe.test(v), {
+              message: `${f.label} must be a valid time`,
+            });
+        break;
+      }
     }
     if (!f.required && f.type !== 'checkbox' && f.type !== 'number') {
       field = field.optional();
@@ -173,7 +183,18 @@ export function CrudPage<T extends { id: string }>({
     const values: FormValues = {};
     for (const f of fields) {
       const v = (row as unknown as Record<string, unknown>)[f.name];
-      values[f.name] = v ?? (f.type === 'checkbox' ? false : '');
+      if (v === undefined || v === null) {
+        values[f.name] = f.type === 'checkbox' ? false : '';
+      } else if (typeof v === 'number') {
+        // Numeric form fields are strings in the form state (converted back
+        // to numbers on submit); stringify row values so edits validate.
+        values[f.name] = String(v);
+      } else if (f.type === 'time' && typeof v === 'string') {
+        // API returns "HH:MM:SS"; the picker works with "HH:MM".
+        values[f.name] = v.slice(0, 5);
+      } else {
+        values[f.name] = v;
+      }
     }
     reset(values as Values);
     setEditing(row);
@@ -238,7 +259,7 @@ export function CrudPage<T extends { id: string }>({
   const rows = query.data?.items ?? [];
 
   return (
-    <div className="grid gap-4">
+    <div className="grid min-w-0 gap-4 [&>*]:min-w-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
@@ -373,9 +394,15 @@ export function CrudPage<T extends { id: string }>({
                       />
                       Enabled
                     </label>
+                  ) : f.type === 'time' ? (
+                    <TimeSelect
+                      value={(value as string) ?? ''}
+                      onChange={(v) => onChange(v)}
+                      disabled={Boolean(editing) && Boolean(f.disabledOnEdit)}
+                    />
                   ) : (
                     <Input
-                      type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : f.type === 'time' ? 'time' : 'text'}
+                      type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text'}
                       placeholder={f.placeholder}
                       min={f.min}
                       step={f.step}
